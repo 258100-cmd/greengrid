@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buy – GreenGrid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDE7DA;
+    --paper-line:#DAD0B9;
+    --panel:#F6F2E8;
+    --ink:#24211D;
+    --ink-soft:#5C574C;
+    --pot-a:#4B7A5B;
+    --pot-b:#B0522D;
+    --cta:#2F5233;
+    --cta-hover:#25412A;
+    --danger:#A6432D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    min-height:100vh;
+  }
+  .app{max-width:1280px;margin:0 auto;padding:28px 24px 56px;}
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:20px;flex-wrap:wrap;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:16px;margin-bottom:24px;
+  }
+  h1{
+    font-family:'Fraunces', serif;font-weight:600;
+    font-size:clamp(28px,4vw,42px);line-height:1.05;margin:0;letter-spacing:-0.01em;
+  }
+  header p{margin:6px 0 0;color:var(--ink-soft);font-size:15px;max-width:70ch;}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start;}
+  @media (max-width:960px){.layout{grid-template-columns:1fr;}}
+
+  .box{background:var(--panel);border:1.5px solid var(--ink);}
+
+  /* setup + toolbar */
+  .setup{padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;}
+  .setup-row,.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+  .toolbar{padding:12px 14px;margin-bottom:14px;}
+  .label{font-size:13px;color:var(--ink-soft);margin-right:4px;min-width:74px;}
+  .tool{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 12px;border:1.5px solid var(--ink);background:#fff;
+    font-family:inherit;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;
+  }
+  .tool:hover{box-shadow:2px 2px 0 var(--ink);}
+  .tool[aria-pressed="true"]{outline:2px solid var(--cta);outline-offset:2px;box-shadow:2px 2px 0 var(--ink);}
+  .tool svg{flex:0 0 auto;}
+  .chip{display:inline-block;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink);flex:0 0 auto;}
+  .spacer{flex:1 1 auto;}
+  .hint{font-size:13px;color:var(--ink-soft);}
+  .btn{
+    padding:9px 14px;border:1.5px solid var(--ink);background:var(--cta);color:#fff;
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .btn:hover:not(:disabled){background:var(--cta-hover);}
+  .btn.ghostbtn{background:#fff;color:var(--ink);}
+  .btn.ghostbtn:hover:not(:disabled){background:#EFE9DA;}
+  button:focus-visible{outline:3px solid var(--cta);outline-offset:2px;}
+
+  /* canvas */
+  .canvas{
+    padding:22px 18px 18px;overflow:auto;max-height:78vh;
+    background:repeating-linear-gradient(45deg, transparent, transparent 11px, rgba(36,33,29,0.035) 11px, rgba(36,33,29,0.035) 12px), var(--panel);
+  }
+  .plan{display:grid;width:max-content;margin:0 auto;}
+  .wall-wrap{display:flex;flex-direction:column;gap:8px;width:282px;}
+  .wall-head{display:flex;align-items:center;justify-content:space-between;gap:8px;height:28px;}
+  .wall-title{font-weight:700;font-size:14px;white-space:nowrap;}
+  .wall-code{
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+    background:#fff;border:1.5px solid var(--ink);padding:2px 6px;white-space:nowrap;
+  }
+  .x-btn{
+    width:26px;height:26px;border:1.5px solid var(--ink);background:#fff;cursor:pointer;
+    font-size:15px;line-height:1;font-family:inherit;color:var(--ink);flex:0 0 auto;
+  }
+  .x-btn:hover:not(:disabled){background:var(--danger);color:#fff;}
+  .x-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+  .wall{
+    display:grid;grid-template-columns:repeat(3,84px);grid-template-rows:repeat(3,84px);
+    padding:12px;width:282px;
+    border:1.5px solid var(--ink);
+  }
+  .hole{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    border:none;background:transparent;padding:0;cursor:pointer;font-family:inherit;
+  }
+  .hole .ring{
+    width:50px;height:50px;border-radius:50%;
+    background:rgba(36,33,29,.78);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;
+    color:#EDE7DA;font-size:13px;font-weight:600;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .hole:hover:not(.blocked):not(.filled) .ring{transform:scale(1.08);box-shadow:inset 0 2px 4px rgba(0,0,0,.5),0 0 0 3px var(--cta);}
+  .pot-a,.pot-b{
+    display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--ink);color:#fff;font-weight:700;font-size:15px;
+    box-shadow:2px 2px 0 rgba(36,33,29,.55);
+  }
+  .pot-a{width:56px;height:56px;border-radius:50%;background:var(--pot-a);}
+  .pot-b{width:74px;height:46px;border-radius:10px;background:var(--pot-b);}
+  .hole.blocked{cursor:not-allowed;}
+  .hole.blocked .ring{
+    background:repeating-linear-gradient(45deg, rgba(166,67,45,.55) 0 5px, rgba(36,33,29,.78) 5px 10px);
+    box-shadow:0 0 0 2px var(--danger);color:#fff;
+  }
+  .hole.shake{animation:shake .35s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+  @media (prefers-reduced-motion: reduce){.hole.shake{animation:none;}}
+
+  /* ghost tile: add a wall here */
+  .ghost{
+    width:282px;min-height:318px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    border:2px dashed #A99C7C;background:rgba(255,255,255,.35);
+    font-family:inherit;color:var(--ink-soft);cursor:pointer;
+  }
+  .ghost:hover{border-color:var(--cta);color:var(--cta);background:rgba(255,255,255,.7);}
+  .ghost .plus{font-size:40px;line-height:1;font-weight:500;}
+  .ghost .t{font-size:14px;font-weight:600;}
+  .ghost .s{font-size:12px;}
+
+  /* two dovetail fillers per shared edge */
+  .filler-h{position:relative;width:34px;}
+  .filler-h .f{position:absolute;left:0;}
+  .filler-v{position:relative;height:34px;}
+  .filler-v .f{position:absolute;top:0;}
+
+  /* status */
+  .status{margin-top:14px;padding:11px 14px;font-size:14px;min-height:44px;border-left:5px solid var(--cta);}
+  .status.warn{border-left-color:var(--danger);}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-soft);}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .sw{width:14px;height:14px;border-radius:50%;display:inline-block;border:1.5px solid var(--ink);}
+  .sw.blocked{background:repeating-linear-gradient(45deg, rgba(166,67,45,.7) 0 3px, #24211D 3px 6px);}
+  .sw.free{background:#24211D;}
+
+  /* cart */
+  .cart{padding:16px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;}
+  .cart h2{font-family:'Fraunces',serif;font-size:22px;margin:0 0 12px;}
+  .cart-item{border:1.5px solid var(--ink);background:#fff;padding:10px 12px;margin-bottom:10px;}
+  .cart-item .name{font-weight:700;font-size:14px;}
+  .cart-item .id{
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;margin-top:2px;word-break:break-all;
+  }
+  .cart-item .contents{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+  .totals{border-top:2px solid var(--ink);margin-top:14px;padding-top:10px;}
+  .totals .line{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:3px 0;}
+  .totals .line b{font-variant-numeric:tabular-nums;text-align:right;}
+  .order-id{margin-top:14px;}
+  .order-id .lbl{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .order-id code{
+    display:block;word-break:break-all;background:#fff;border:1.5px solid var(--ink);
+    padding:8px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.7;
+  }
+  .cart .btn{width:100%;margin-top:10px;}
+  .note{font-size:12px;color:var(--ink-soft);margin-top:12px;line-height:1.55;}
+
+  .sitenav{border-bottom:2px solid var(--ink);background:var(--paper);}
+  .sitenav .snav{max-width:1280px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .sitenav .logo{font-family:'Fraunces',serif;font-weight:600;font-size:26px;text-decoration:none;color:var(--ink);}
+  .sitenav ul{display:flex;gap:8px;list-style:none;margin:0;padding:0;}
+  .sitenav a.l{display:inline-block;padding:8px 14px;border:1.5px solid transparent;text-decoration:none;font-weight:600;font-size:15px;color:var(--ink);}
+  .sitenav a.l:hover{border-color:var(--ink);background:#fff;}
+  .sitenav a.cur{border-color:var(--ink);background:#fff;}
+  .sitefoot{max-width:1280px;margin:0 auto;padding:0 24px 40px;font-size:14px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<nav class="sitenav"><div class="snav"><a class="logo" href="../index.html">GreenGrid</a><ul><li><a class="l" href="../index.html">Home</a></li><li><a class="l" href="../about/index.html">About us</a></li><li><a class="l cur" href="index.html" aria-current="page">Buy</a></li></ul></div></nav>
+<div class="app">
+
+  <header>
+    <div>
+      <h1>Configure your wall</h1>
+      <p>Choose the wall colour and mounting, then pick a pot and click a hole. A pot blocks the holes around it. Click a dashed tile to add a wall above, below, left or right. Neighbouring walls are joined by two dovetail fillers per shared edge.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main>
+      <div class="box setup" role="group" aria-label="Wall setup">
+        <div class="setup-row">
+          <span class="label">1 · Colour</span>
+          <span class="setup-row" id="colour-opts"></span>
+        </div>
+        <div class="setup-row">
+          <span class="label">2 · Mounting</span>
+          <span class="setup-row" id="mount-opts"></span>
+        </div>
+      </div>
+
+      <div class="box toolbar" role="toolbar" aria-label="Pot tools">
+        <span class="label">3 · Pot</span>
+        <button class="tool" data-tool="A" aria-pressed="true">
+          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="#4B7A5B" stroke="#24211D" stroke-width="1.5"/></svg>
+          A · PotSmall
+        </button>
+        <button class="tool" data-tool="B" aria-pressed="false">
+          <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><rect x="2" y="4" width="22" height="14" rx="4" fill="#B0522D" stroke="#24211D" stroke-width="1.5"/></svg>
+          B · PotLarge
+        </button>
+        <button class="tool" data-tool="X" aria-pressed="false">
+          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 5 L17 17 M17 5 L5 17" stroke="#24211D" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Remove pot
+        </button>
+        <span class="spacer"></span>
+        <span class="hint" id="wall-count"></span>
+      </div>
+
+      <div class="box canvas" id="canvas"><div class="plan" id="plan"></div></div>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw free"></i> free hole</span>
+        <span><i class="sw blocked"></i> too close to another pot, doesn't fit</span>
+      </div>
+    </main>
+
+    <aside class="box cart" aria-label="Cart">
+      <h2>Your order</h2>
+      <div id="cart-items"></div>
+      <div class="totals" id="totals"></div>
+      <div class="order-id">
+        <div class="lbl">Order ID (position and ID of each wall)</div>
+        <code id="order-id"></code>
+      </div>
+      <button class="btn ghostbtn" id="copy">Copy order ID</button>
+      <p class="note">Wall ID has three parts separated by dots. <b>1)</b> mounting letter (D = DIN rail, N = nail holes, G = glue) and colour number. <b>2)</b> 9 pot holes in reading order (A = PotSmall, B = PotLarge, - = empty). <b>3)</b> 8 dovetail holes, two per side clockwise from the top (F = filler, - = no neighbouring wall). Example: D1.A---B----.--FF----. R1C2 means row 1, column 2 of the layout. The assembly robot reads the ID and picks the matching premade set.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+const HOLES = 9, COLS = 3, EMPTY = '-', MAX_WALLS = 12;
+// radius = how many grid steps around the pot are blocked (same rule as wall_code.py)
+const POTS = {
+  A: { name: 'PotSmall', radius: 1 },
+  B: { name: 'PotLarge', radius: 1 },   // placeholder, change once the real size is measured
+};
+// number in the wall ID = colour, letter in the wall ID = mounting
+const COLORS = [
+  { n: 1, name: 'Natural', c1: '#C9A06B', c2: '#96703F' },
+  { n: 2, name: 'White',   c1: '#F4F1EA', c2: '#CFC9BA' },
+  { n: 3, name: 'Grey',    c1: '#A8A69F', c2: '#76746D' },
+  { n: 4, name: 'Black',   c1: '#4A4743', c2: '#2B2926' },
+  { n: 5, name: 'Sage',    c1: '#9DB59B', c2: '#6F8B6E' },
+];
+const MOUNTS = [
+  { id: 'D', name: 'DIN rail' },
+  { id: 'N', name: 'Nail holes (hang like a picture)' },
+  { id: 'G', name: 'Glue' },
+];
+
+let setup = { color: 1, mount: 'D' };   // one choice for the whole order
+let walls = [newWall(0, 0)];            // each wall sits on a layout grid at (gx, gy)
+let tool = 'A';
+let message = null;                     // {text, warn}
+
+function newWall(gx, gy){ return { gx, gy, cells: Array(HOLES).fill(EMPTY) }; }
+const wallAt = (x, y) => walls.find(w => w.gx === x && w.gy === y);
+const num = w => walls.indexOf(w) + 1;
+const colorInfo = () => COLORS.find(c => c.n === setup.color);
+const mountInfo = () => MOUNTS.find(m => m.id === setup.mount);
+const rc = h => [Math.floor(h / COLS), h % COLS];
+const dist = (a, b) => { const [r1,c1] = rc(a), [r2,c2] = rc(b); return Math.max(Math.abs(r1-r2), Math.abs(c1-c2)); };
+
+// 8 dovetail holes, two per side, clockwise from the top: top, right, bottom, left.
+// F = a neighbouring wall is there (filler goes in), - = no neighbour, hole stays empty.
+function connCode(w){
+  const f = (dx, dy) => wallAt(w.gx + dx, w.gy + dy) ? 'F' : EMPTY;
+  const t = f(0, -1), r = f(1, 0), b = f(0, 1), l = f(-1, 0);
+  return t + t + r + r + b + b + l + l;
+}
+// full wall ID = mounting letter + colour number . 9 pot holes . 8 dovetail holes
+const fullCode = w => `${setup.mount}${setup.color}.${w.cells.join('')}.${connCode(w)}`;
+
+function bounds(list){
+  const xs = list.map(w => w.gx), ys = list.map(w => w.gy);
+  return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+}
+function position(w){ const b = bounds(walls); return { r: w.gy - b.minY + 1, c: w.gx - b.minX + 1 }; }
+const posLabel = w => { const p = position(w); return `R${p.r}C${p.c}`; };
+
+// first existing pot (hole index) that would collide with `type` placed at `hole`
+function blocker(w, hole, type){
+  for (let i = 0; i < HOLES; i++){
+    const t = w.cells[i];
+    if (i === hole || t === EMPTY) continue;
+    if (dist(i, hole) <= Math.max(POTS[type].radius, POTS[t].radius)) return i;
+  }
+  return -1;
+}
+
+// would the layout stay in one piece without wall `skip`?
+function connectedWithout(skip){
+  const rest = walls.filter(w => w !== skip);
+  if (rest.length <= 1) return true;
+  const seen = new Set([rest[0]]), queue = [rest[0]];
+  while (queue.length){
+    const w = queue.pop();
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const n = rest.find(o => o.gx === w.gx + dx && o.gy === w.gy + dy);
+      if (n && !seen.has(n)){ seen.add(n); queue.push(n); }
+    }
+  }
+  return seen.size === rest.length;
+}
+
+function setMessage(text, warn){ message = { text, warn: !!warn }; renderStatus(); }
+
+function clickHole(w, h){
+  const cur = w.cells[h], n = h + 1, wn = num(w);
+  if (tool === 'X'){
+    if (cur === EMPTY) return setMessage(`Hole ${n} on wall ${wn} is already empty.`);
+    w.cells[h] = EMPTY;
+    setMessage(`Removed ${POTS[cur].name} from hole ${n} on wall ${wn}.`);
+  } else if (cur === tool){
+    w.cells[h] = EMPTY;
+    setMessage(`Removed ${POTS[cur].name} from hole ${n} on wall ${wn}.`);
+  } else {
+    const b = blocker(w, h, tool);
+    if (b >= 0){
+      render();
+      const el = document.querySelector(`[data-wall="${wn - 1}"][data-hole="${h}"]`);
+      if (el) el.classList.add('shake');
+      return setMessage(`${POTS[tool].name} doesn't fit in hole ${n} on wall ${wn}: it is too close to the pot in hole ${b+1}. Pick a hole further away.`, true);
+    }
+    w.cells[h] = tool;
+    setMessage(`${POTS[tool].name} placed in hole ${n} on wall ${wn}. Holes around it are now blocked.`);
+  }
+  render();
+}
+
+function addWall(x, y){
+  if (walls.length >= MAX_WALLS || wallAt(x, y)) return;
+  const w = newWall(x, y);
+  walls.push(w);
+  setMessage(`Wall ${num(w)} added. Each shared edge gets two dovetail fillers.`);
+  render();
+  const el = document.querySelector(`[data-wall-box="${num(w) - 1}"]`);
+  if (el) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function removeWall(w){
+  if (walls.length <= 1 || !connectedWithout(w)) return;
+  const n = num(w);
+  walls.splice(walls.indexOf(w), 1);
+  setMessage(`Wall ${n} removed.`);
+  render();
+}
+
+const FILLER_H = '<svg width="34" height="60" viewBox="0 0 34 60" aria-hidden="true"><path d="M2 8 L15 22 L15 38 L2 52 Z" fill="#6E6A63" stroke="#24211D" stroke-width="1.5"/><path d="M32 8 L19 22 L19 38 L32 52 Z" fill="#6E6A63" stroke="#24211D" stroke-width="1.5"/></svg>';
+const FILLER_V = '<svg width="60" height="34" viewBox="0 0 60 34" aria-hidden="true"><path d="M8 2 L22 15 L38 15 L52 2 Z" fill="#6E6A63" stroke="#24211D" stroke-width="1.5"/><path d="M8 32 L22 19 L38 19 L52 32 Z" fill="#6E6A63" stroke="#24211D" stroke-width="1.5"/></svg>';
+
+function render(){
+  const plan = document.getElementById('plan');
+  plan.innerHTML = '';
+  const col = colorInfo();
+
+  // free tiles next to a wall = places where a wall can be added
+  const ghosts = [];
+  if (walls.length < MAX_WALLS){
+    const seen = new Set();
+    walls.forEach(w => {
+      [[1,0,'to the right of'],[-1,0,'to the left of'],[0,1,'below'],[0,-1,'above']].forEach(([dx, dy, rel]) => {
+        const x = w.gx + dx, y = w.gy + dy, key = x + ',' + y;
+        if (wallAt(x, y) || seen.has(key)) return;
+        seen.add(key);
+        ghosts.push({ x, y, text: `${rel} wall ${num(w)}` });
+      });
+    });
+  }
+
+  const all = walls.concat(ghosts.map(g => ({ gx: g.x, gy: g.y })));
+  const b = bounds(all);
+  const W = b.maxX - b.minX + 1, H = b.maxY - b.minY + 1;
+  const cols = [], rows = [];
+  for (let i = 0; i < W; i++){ cols.push('282px'); if (i < W - 1) cols.push('34px'); }
+  for (let i = 0; i < H; i++){ rows.push('auto'); if (i < H - 1) rows.push('34px'); }
+  plan.style.gridTemplateColumns = cols.join(' ');
+  plan.style.gridTemplateRows = rows.join(' ');
+  const gcol = x => 2 * (x - b.minX) + 1, grow = y => 2 * (y - b.minY) + 1;
+
+  // two dovetail fillers on every shared edge, at 30 % and 70 % along the edge
+  walls.forEach(w => {
+    if (wallAt(w.gx + 1, w.gy)){
+      const f = document.createElement('div');
+      f.className = 'filler-h'; f.title = 'Two dovetail fillers join the walls';
+      f.innerHTML = `<span class="f" style="top:90px">${FILLER_H}</span><span class="f" style="top:201px">${FILLER_H}</span>`;
+      f.style.gridColumn = gcol(w.gx) + 1; f.style.gridRow = grow(w.gy);
+      plan.appendChild(f);
+    }
+    if (wallAt(w.gx, w.gy + 1)){
+      const f = document.createElement('div');
+      f.className = 'filler-v'; f.title = 'Two dovetail fillers join the walls';
+      f.innerHTML = `<span class="f" style="left:55px">${FILLER_V}</span><span class="f" style="left:167px">${FILLER_V}</span>`;
+      f.style.gridColumn = gcol(w.gx); f.style.gridRow = grow(w.gy) + 1;
+      plan.appendChild(f);
+    }
+  });
+
+  ghosts.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'ghost';
+    btn.setAttribute('aria-label', `Add a wall ${g.text}`);
+    btn.innerHTML = `<span class="plus">+</span><span class="t">Add wall</span><span class="s">${g.text}</span>`;
+    btn.style.gridColumn = gcol(g.x); btn.style.gridRow = grow(g.y);
+    btn.addEventListener('click', () => addWall(g.x, g.y));
+    plan.appendChild(btn);
+  });
+
+  walls.forEach((w, wi) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'wall-wrap';
+    wrap.dataset.wallBox = wi;
+    wrap.style.gridColumn = gcol(w.gx); wrap.style.gridRow = grow(w.gy);
+    const canRemove = walls.length > 1 && connectedWithout(w);
+    const why = walls.length === 1 ? 'The last wall cannot be removed' : (canRemove ? `Remove wall ${wi+1}` : 'Removing this wall would split the layout');
+    wrap.innerHTML = `
+      <div class="wall-head">
+        <span class="wall-title">Wall ${wi+1}</span>
+        <span class="wall-code" title="Wall ID">${fullCode(w)}</span>
+        <button class="x-btn" aria-label="${why}" title="${why}" ${canRemove ? '' : 'disabled'}>×</button>
+      </div>`;
+    wrap.querySelector('.x-btn').addEventListener('click', () => removeWall(w));
+
+    const grid = document.createElement('div');
+    grid.className = 'wall';
+    grid.style.background = `linear-gradient(155deg, ${col.c1}, ${col.c2})`;
+    for (let h = 0; h < HOLES; h++){
+      const t = w.cells[h];
+      const btn = document.createElement('button');
+      btn.dataset.wall = wi; btn.dataset.hole = h;
+      let cls = 'hole', label = `Wall ${wi+1}, hole ${h+1}`, inner = '';
+      if (t !== EMPTY){
+        cls += ' filled';
+        inner = `<div class="pot-${t.toLowerCase()}">${t}</div>`;
+        label += `, ${POTS[t].name}`;
+      } else if (tool !== 'X' && blocker(w, h, tool) >= 0){
+        cls += ' blocked';
+        label += ', blocked: too close to another pot';
+        btn.title = "Doesn't fit: too close to another pot";
+        inner = '<div class="ring">×</div>';
+      } else {
+        label += ', empty';
+        inner = `<div class="ring">${h+1}</div>`;
+      }
+      btn.className = cls;
+      btn.setAttribute('aria-label', label);
+      btn.innerHTML = inner;
+      btn.addEventListener('click', () => clickHole(w, h));
+      btn.addEventListener('animationend', () => btn.classList.remove('shake'));
+      grid.appendChild(btn);
+    }
+    wrap.appendChild(grid);
+    plan.appendChild(wrap);
+  });
+
+  document.getElementById('wall-count').textContent =
+    walls.length >= MAX_WALLS ? `Maximum of ${MAX_WALLS} walls reached` : `${walls.length} of ${MAX_WALLS} walls`;
+  updateSetup();
+  renderCart();
+  renderStatus();
+}
+
+function renderStatus(){
+  const el = document.getElementById('status');
+  if (!message){
+    el.className = 'status';
+    el.textContent = `Pick a pot and click a hole. Selected: ${tool === 'X' ? 'Remove pot' : POTS[tool].name}.`;
+    return;
+  }
+  el.className = 'status' + (message.warn ? ' warn' : '');
+  el.textContent = message.text;
+}
+
+function sortedWalls(){
+  return walls.slice().sort((a, b) => a.gy - b.gy || a.gx - b.gx);
+}
+
+function renderCart(){
+  let a = 0, b = 0, joints = 0;
+  const col = colorInfo(), mount = mountInfo();
+  document.getElementById('cart-items').innerHTML = sortedWalls().map(w => {
+    const ca = w.cells.filter(c => c === 'A').length;
+    const cb = w.cells.filter(c => c === 'B').length;
+    a += ca; b += cb;
+    const parts = [];
+    if (ca) parts.push(`PotSmall × ${ca}`);
+    if (cb) parts.push(`PotLarge × ${cb}`);
+    return `<div class="cart-item">
+      <div class="name">Wall ${num(w)} · ${posLabel(w)}</div>
+      <div class="id">${fullCode(w)}</div>
+      <div class="contents">${mount.name} · ${col.name}<br>${parts.length ? parts.join(', ') : 'No pots'}</div>
+    </div>`;
+  }).join('');
+
+  walls.forEach(w => { if (wallAt(w.gx + 1, w.gy)) joints++; if (wallAt(w.gx, w.gy + 1)) joints++; });
+  document.getElementById('totals').innerHTML = `
+    <div class="line"><span>Colour</span><b>${col.n} · ${col.name}</b></div>
+    <div class="line"><span>Mounting</span><b>${mount.id} · ${mount.name}</b></div>
+    <div class="line"><span>Walls</span><b>${walls.length}</b></div>
+    <div class="line"><span>Fillers (dovetails)</span><b>${joints * 2}</b></div>
+    <div class="line"><span>PotSmall</span><b>${a}</b></div>
+    <div class="line"><span>PotLarge</span><b>${b}</b></div>`;
+  document.getElementById('order-id').textContent = orderId();
+}
+
+function orderId(){
+  return sortedWalls().map(w => `${posLabel(w)}:${fullCode(w)}`).join(' / ');
+}
+
+// setup buttons are built once, so keyboard focus stays on them when pressed
+function buildSetup(){
+  const colBox = document.getElementById('colour-opts');
+  COLORS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'tool'; btn.dataset.color = c.n;
+    btn.innerHTML = `<i class="chip" style="background:linear-gradient(155deg, ${c.c1}, ${c.c2})"></i>${c.n} · ${c.name}`;
+    btn.addEventListener('click', () => {
+      setup.color = c.n;
+      setMessage(`Colour ${c.n} (${c.name}) selected for all walls. It is the number in the wall ID.`);
+      render();
+    });
+    colBox.appendChild(btn);
+  });
+  const mBox = document.getElementById('mount-opts');
+  MOUNTS.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'tool'; btn.dataset.mount = m.id;
+    btn.textContent = `${m.id} · ${m.name}`;
+    btn.addEventListener('click', () => {
+      setup.mount = m.id;
+      setMessage(`Mounting "${m.name}" selected for all walls. It is the letter in the wall ID.`);
+      render();
+    });
+    mBox.appendChild(btn);
+  });
+}
+function updateSetup(){
+  document.querySelectorAll('[data-color]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.color === setup.color)));
+  document.querySelectorAll('[data-mount]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mount === setup.mount)));
+}
+
+document.querySelectorAll('.tool[data-tool]').forEach(btn =>
+  btn.addEventListener('click', () => {
+    tool = btn.dataset.tool;
+    document.querySelectorAll('.tool[data-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === btn)));
+    message = null;
+    render();
+  }));
+
+document.getElementById('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(orderId());
+    setMessage('Order ID copied.');
+  } catch (e) {
+    setMessage('Copy is blocked in this browser. Select the order ID and copy it manually.', true);
+  }
+});
+
+buildSetup();
+render();
+</script>
+<div class="sitefoot">GreenGrid is a student project at NTNU (MMA4002). It is a prototype: no real orders are taken, copy the order ID to keep your configuration.</div>
+</body>
+</html>
