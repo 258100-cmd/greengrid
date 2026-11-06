@@ -248,6 +248,7 @@
         <div class="lbl">Order ID (position and ID of each wall)</div>
         <code id="order-id"></code>
       </div>
+      <button class="btn" id="order-btn">Order now</button>
       <button class="btn ghostbtn" id="copy">Copy order ID</button>
       <p class="note">Wall ID has three parts separated by dots. <b>1)</b> mounting letter (D = DIN rail, N = nail holes, G = glue) and colour number. <b>2)</b> 9 pot holes in reading order (A = PotSmall, B = PotLarge, - = empty). <b>3)</b> 8 dovetail holes, two per side clockwise from the top (F = filler, - = no neighbouring wall). Example: D1.A---B----.--FF----. R1C2 means row 1, column 2 of the layout. The assembly robot reads the ID and picks the matching premade set.</p>
     </aside>
@@ -592,5 +593,36 @@ buildSetup();
 render();
 </script>
 <div class="sitefoot">GreenGrid is a student project at NTNU (MMA4002). It is a prototype: no real orders are taken, copy the order ID to keep your configuration.</div>
+
+<div id="ord-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;align-items:center;justify-content:center;padding:16px;">
+  <form id="ord-form" style="background:#fff;color:#222;border-radius:14px;padding:24px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3);font-family:inherit;">
+    <h3 style="margin:0 0 4px">Delivery details</h3>
+    <p id="ord-sum" style="margin:0 0 14px;font-size:14px;opacity:.7"></p>
+    <div id="ord-fields">
+      <input required placeholder="Full name" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit">
+      <input required placeholder="Street and number" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit">
+      <div style="display:flex;gap:8px;margin-bottom:8px"><input required placeholder="ZIP" style="width:35%;padding:10px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit"><input required placeholder="City" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit"></div>
+      <input required type="email" placeholder="E-mail" style="width:100%;padding:10px;margin-bottom:14px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit">
+    </div>
+    <p id="ord-done" style="display:none;font-weight:600">Thank you! This is a prototype, so no real order was placed.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn ghostbtn" id="ord-close">Close</button>
+      <button type="submit" class="btn" id="ord-submit">Place order</button>
+    </div>
+  </form>
+</div>
+<script>
+(function(){
+  const m=document.getElementById('ord-modal'),f=document.getElementById('ord-form');
+  document.getElementById('order-btn').onclick=()=>{
+    const t=document.querySelector('#totals .total b');
+    document.getElementById('ord-sum').textContent='Total: '+(t?t.textContent:'');
+    document.getElementById('ord-fields').style.display='';document.getElementById('ord-done').style.display='none';
+    document.getElementById('ord-submit').style.display='';m.style.display='flex';};
+  document.getElementById('ord-close').onclick=()=>{m.style.display='none';};
+  f.onsubmit=e=>{e.preventDefault();document.getElementById('ord-fields').style.display='none';
+    document.getElementById('ord-done').style.display='';document.getElementById('ord-submit').style.display='none';};
+})();
+</script>
 </body>
 </html>
