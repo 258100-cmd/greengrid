@@ -81,6 +81,9 @@
   }
   .plan{display:grid;width:max-content;margin:0 auto;}
   .wall-wrap{display:flex;flex-direction:column;gap:8px;width:282px;}
+  .swatches{display:inline-flex;gap:4px;}
+  .sw-c{width:20px;height:20px;border-radius:50%;border:1.5px solid #999;cursor:pointer;padding:0;}
+  .sw-c[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:1px;}
   .wall-col{font:inherit;font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:6px;background:#fff;}
   .wall-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-height:28px;margin-bottom:4px;}
   .wall-head .wall-code{order:5;flex:1 0 100%;}
@@ -198,7 +201,7 @@
   <header>
     <div>
       <h1>Configure your wall</h1>
-      <p>Choose the colour (for all walls, or per wall in its header) and the mounting, then pick a pot and click a hole. A pot blocks the holes around it. Click a dashed tile to add a wall above, below, left or right. Neighbouring walls are joined by two dovetail fillers per shared edge.</p>
+      <p>Pick a colour for each wall in its header, choose the mounting, then pick a pot and click a hole. A pot blocks the holes around it. Click a dashed tile to add a wall above, below, left or right. Neighbouring walls are joined by two dovetail fillers per shared edge.</p>
     </div>
   </header>
 
@@ -206,17 +209,13 @@
     <main>
       <div class="box setup" role="group" aria-label="Wall setup">
         <div class="setup-row">
-          <span class="label">1 · Colour (all walls)</span>
-          <span class="setup-row" id="colour-opts"></span>
-        </div>
-        <div class="setup-row">
-          <span class="label">2 · Mounting</span>
+          <span class="label">1 · Mounting</span>
           <span class="setup-row" id="mount-opts"></span>
         </div>
       </div>
 
       <div class="box toolbar" role="toolbar" aria-label="Pot tools">
-        <span class="label">3 · Pot</span>
+        <span class="label">2 · Pot</span>
         <button class="tool" data-tool="A" aria-pressed="true">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="#4B7A5B" stroke="#24211D" stroke-width="1.5"/></svg>
           A · PotSmall <span class="pp" data-price="A"></span>
@@ -449,11 +448,11 @@ function render(){
     wrap.innerHTML = `
       <div class="wall-head">
         <span class="wall-title">Wall ${wi+1}</span>
-        <select class="wall-col" aria-label="Colour of wall ${wi+1}" title="Colour of this wall">${COLORS.map(c => `<option value="${c.n}" ${c.n === w.color ? 'selected' : ''}>${c.n} · ${c.name}</option>`).join('')}</select>
+        <span class="swatches">${COLORS.map(c => `<button type="button" class="sw-c" data-c="${c.n}" title="${c.n} · ${c.name}" aria-label="Colour ${c.n} ${c.name}" aria-pressed="${c.n === w.color}" style="background:linear-gradient(155deg,${c.c1},${c.c2})"></button>`).join('')}</span>
         <span class="wall-code" title="Wall ID">${fullCode(w)}</span>
         <button class="x-btn" aria-label="${why}" title="${why}" ${canRemove ? '' : 'disabled'}>×</button>
       </div>`;
-    wrap.querySelector('.wall-col').addEventListener('change', e => { w.color = +e.target.value; setMessage(`Wall ${wi+1}: colour ${w.color} (${colorOf(w).name}). It is the number in the wall ID.`); render(); });
+    wrap.querySelectorAll('.sw-c').forEach(b => b.addEventListener('click', () => { w.color = +b.dataset.c; setup.color = w.color; setMessage(`Wall ${wi+1}: colour ${w.color} (${colorOf(w).name}). It is the number in the wall ID.`); render(); }));
     wrap.querySelector('.x-btn').addEventListener('click', () => removeWall(w));
 
     const grid = document.createElement('div');
@@ -546,7 +545,7 @@ function orderId(){
 // setup buttons are built once, so keyboard focus stays on them when pressed
 function buildSetup(){
   const colBox = document.getElementById('colour-opts');
-  COLORS.forEach(c => {
+  if (colBox) COLORS.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'tool'; btn.dataset.color = c.n;
     btn.innerHTML = `<i class="chip" style="background:linear-gradient(155deg, ${c.c1}, ${c.c2})"></i>${c.n} · ${c.name}`;
@@ -599,33 +598,29 @@ render();
 <div class="sitefoot">GreenGrid is a student project at NTNU (MMA4002). It is a prototype: no real orders are taken, copy the order ID to keep your configuration.</div>
 
 <div id="ord-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;align-items:center;justify-content:center;padding:16px;">
-  <form id="ord-form" style="background:#fff;color:#222;border-radius:14px;padding:24px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3);font-family:inherit;">
-    <h3 style="margin:0 0 4px">Delivery details</h3>
-    <p id="ord-sum" style="margin:0 0 14px;font-size:14px;opacity:.7"></p>
-    <div id="ord-fields">
-      <input required placeholder="Full name" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit">
-      <input required placeholder="Street and number" style="width:100%;padding:10px;margin-bottom:8px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit">
-      <div style="display:flex;gap:8px;margin-bottom:8px"><input required placeholder="ZIP" style="width:35%;padding:10px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit"><input required placeholder="City" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit"></div>
-      <input required type="email" placeholder="E-mail" style="width:100%;padding:10px;margin-bottom:14px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;font:inherit">
-    </div>
-    <p id="ord-done" style="display:none;font-weight:600">Thank you! This is a prototype, so no real order was placed.</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button type="button" class="btn ghostbtn" id="ord-close">Close</button>
-      <button type="submit" class="btn" id="ord-submit">Place order</button>
-    </div>
-  </form>
+  <div style="background:#fff;color:#222;border-radius:14px;padding:24px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3);font-family:inherit;">
+    <h3 style="margin:0 0 4px">Order confirmed ✓</h3>
+    <p id="ord-no" style="margin:0 0 14px;font-size:14px;opacity:.7"></p>
+    <div id="ord-info" style="font-size:15px;line-height:1.6"></div>
+    <p style="font-size:12px;opacity:.6;margin:14px 0">Prototype: the name and address are random examples, no real order was placed.</p>
+    <div style="text-align:right"><button type="button" class="btn" id="ord-close">Close</button></div>
+  </div>
 </div>
 <script>
 (function(){
-  const m=document.getElementById('ord-modal'),f=document.getElementById('ord-form');
+  const names=['Jan Novák','Anna Svobodová','Lars Hansen','Ingrid Olsen','Petr Dvořák','Emma Johansen','Tomáš Černý','Sofie Berg'];
+  const addrs=['Kongens gate 12, 7013 Trondheim','Božetěchova 2, 612 00 Brno','Torvet 5, 0154 Oslo','Hlavní 45, 602 00 Brno','Bakklandet 8, 7014 Trondheim'];
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const m=document.getElementById('ord-modal');
   document.getElementById('order-btn').onclick=()=>{
     const t=document.querySelector('#totals .total b');
-    document.getElementById('ord-sum').textContent='Total: '+(t?t.textContent:'');
-    document.getElementById('ord-fields').style.display='';document.getElementById('ord-done').style.display='none';
-    document.getElementById('ord-submit').style.display='';m.style.display='flex';};
+    const n='GG-'+Math.floor(10000+Math.random()*90000);
+    document.getElementById('ord-no').textContent='Order number '+n;
+    document.getElementById('ord-info').innerHTML=
+      '<b>Customer:</b> '+pick(names)+'<br><b>Delivery address:</b> '+pick(addrs)+
+      '<br><b>Total:</b> '+(t?t.textContent:'')+'<br><b>Estimated delivery:</b> about 2 days after production<br><b>Configuration:</b> <code style="font-size:12px;word-break:break-all">'+document.getElementById('order-id').textContent+'</code>';
+    m.style.display='flex';};
   document.getElementById('ord-close').onclick=()=>{m.style.display='none';};
-  f.onsubmit=e=>{e.preventDefault();document.getElementById('ord-fields').style.display='none';
-    document.getElementById('ord-done').style.display='';document.getElementById('ord-submit').style.display='none';};
 })();
 </script>
 </body>
