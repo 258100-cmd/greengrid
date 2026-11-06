@@ -81,7 +81,10 @@
   }
   .plan{display:grid;width:max-content;margin:0 auto;}
   .wall-wrap{display:flex;flex-direction:column;gap:8px;width:282px;}
-  .wall-head{display:flex;align-items:center;justify-content:space-between;gap:8px;height:28px;}
+  .wall-col{font:inherit;font-size:12px;padding:2px 4px;border:1px solid #ccc;border-radius:6px;background:#fff;}
+  .wall-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-height:28px;margin-bottom:4px;}
+  .wall-head .wall-code{order:5;flex:1 0 100%;}
+  .wall-head .x-btn{margin-left:auto;}
   .wall-title{font-weight:700;font-size:14px;white-space:nowrap;}
   .wall-code{
     font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
@@ -195,7 +198,7 @@
   <header>
     <div>
       <h1>Configure your wall</h1>
-      <p>Choose the wall colour and mounting, then pick a pot and click a hole. A pot blocks the holes around it. Click a dashed tile to add a wall above, below, left or right. Neighbouring walls are joined by two dovetail fillers per shared edge.</p>
+      <p>Choose the colour (for all walls, or per wall in its header) and the mounting, then pick a pot and click a hole. A pot blocks the holes around it. Click a dashed tile to add a wall above, below, left or right. Neighbouring walls are joined by two dovetail fillers per shared edge.</p>
     </div>
   </header>
 
@@ -203,7 +206,7 @@
     <main>
       <div class="box setup" role="group" aria-label="Wall setup">
         <div class="setup-row">
-          <span class="label">1 · Colour</span>
+          <span class="label">1 · Colour (all walls)</span>
           <span class="setup-row" id="colour-opts"></span>
         </div>
         <div class="setup-row">
@@ -284,10 +287,10 @@ let walls = [newWall(0, 0)];            // each wall sits on a layout grid at (g
 let tool = 'A';
 let message = null;                     // {text, warn}
 
-function newWall(gx, gy){ return { gx, gy, cells: Array(HOLES).fill(EMPTY) }; }
+function newWall(gx, gy){ return { gx, gy, color: setup.color, cells: Array(HOLES).fill(EMPTY) }; }
 const wallAt = (x, y) => walls.find(w => w.gx === x && w.gy === y);
 const num = w => walls.indexOf(w) + 1;
-const colorInfo = () => COLORS.find(c => c.n === setup.color);
+const colorOf = w => COLORS.find(c => c.n === w.color);
 const mountInfo = () => MOUNTS.find(m => m.id === setup.mount);
 const rc = h => [Math.floor(h / COLS), h % COLS];
 const dist = (a, b) => { const [r1,c1] = rc(a), [r2,c2] = rc(b); return Math.max(Math.abs(r1-r2), Math.abs(c1-c2)); };
@@ -300,7 +303,7 @@ function connCode(w){
   return t + t + r + r + b + b + l + l;
 }
 // full wall ID = mounting letter + colour number . 9 pot holes . 8 dovetail holes
-const fullCode = w => `${setup.mount}${setup.color}.${w.cells.join('')}.${connCode(w)}`;
+const fullCode = w => `${setup.mount}${w.color}.${w.cells.join('')}.${connCode(w)}`;
 
 function bounds(list){
   const xs = list.map(w => w.gx), ys = list.map(w => w.gy);
@@ -383,7 +386,6 @@ const FILLER_V = '<svg width="60" height="34" viewBox="0 0 60 34" aria-hidden="t
 function render(){
   const plan = document.getElementById('plan');
   plan.innerHTML = '';
-  const col = colorInfo();
 
   // free tiles next to a wall = places where a wall can be added
   const ghosts = [];
@@ -447,14 +449,16 @@ function render(){
     wrap.innerHTML = `
       <div class="wall-head">
         <span class="wall-title">Wall ${wi+1}</span>
+        <select class="wall-col" aria-label="Colour of wall ${wi+1}" title="Colour of this wall">${COLORS.map(c => `<option value="${c.n}" ${c.n === w.color ? 'selected' : ''}>${c.n} · ${c.name}</option>`).join('')}</select>
         <span class="wall-code" title="Wall ID">${fullCode(w)}</span>
         <button class="x-btn" aria-label="${why}" title="${why}" ${canRemove ? '' : 'disabled'}>×</button>
       </div>`;
+    wrap.querySelector('.wall-col').addEventListener('change', e => { w.color = +e.target.value; setMessage(`Wall ${wi+1}: colour ${w.color} (${colorOf(w).name}). It is the number in the wall ID.`); render(); });
     wrap.querySelector('.x-btn').addEventListener('click', () => removeWall(w));
 
     const grid = document.createElement('div');
     grid.className = 'wall';
-    grid.style.background = `linear-gradient(155deg, ${col.c1}, ${col.c2})`;
+    grid.style.background = `linear-gradient(155deg, ${colorOf(w).c1}, ${colorOf(w).c2})`;
     for (let h = 0; h < HOLES; h++){
       const t = w.cells[h];
       const btn = document.createElement('button');
@@ -508,7 +512,7 @@ function sortedWalls(){
 
 function renderCart(){
   let a = 0, b = 0, joints = 0;
-  const col = colorInfo(), mount = mountInfo();
+  const mount = mountInfo();
   document.getElementById('cart-items').innerHTML = sortedWalls().map(w => {
     const ca = w.cells.filter(c => c === 'A').length;
     const cb = w.cells.filter(c => c === 'B').length;
@@ -519,13 +523,13 @@ function renderCart(){
     return `<div class="cart-item">
       <div class="name">Wall ${num(w)} · ${posLabel(w)}</div>
       <div class="id">${fullCode(w)}</div>
-      <div class="contents">${mount.name} · ${col.name}<br>${parts.length ? parts.join(', ') : 'No pots'}<br><b>${money(PRICE.wall + ca * PRICE.A + cb * PRICE.B)}</b></div>
+      <div class="contents">${mount.name} · ${colorOf(w).name}<br>${parts.length ? parts.join(', ') : 'No pots'}<br><b>${money(PRICE.wall + ca * PRICE.A + cb * PRICE.B)}</b></div>
     </div>`;
   }).join('');
 
   walls.forEach(w => { if (wallAt(w.gx + 1, w.gy)) joints++; if (wallAt(w.gx, w.gy + 1)) joints++; });
   document.getElementById('totals').innerHTML = `
-    <div class="line"><span>Colour</span><b>${col.n} · ${col.name}</b></div>
+    <div class="line"><span>Colour</span><b>${[...new Set(walls.map(w => w.color))].sort().map(n => COLORS.find(c => c.n === n)).map(c => c.n + ' · ' + c.name).join(', ')}</b></div>
     <div class="line"><span>Mounting</span><b>${mount.id} · ${mount.name}</b></div>
     <div class="line"><span>Walls (${walls.length} × ${money(PRICE.wall)})</span><b>${money(walls.length * PRICE.wall)}</b></div>
     <div class="line"><span>PotSmall (${a} × ${money(PRICE.A)})</span><b>${money(a * PRICE.A)}</b></div>
@@ -547,8 +551,8 @@ function buildSetup(){
     btn.className = 'tool'; btn.dataset.color = c.n;
     btn.innerHTML = `<i class="chip" style="background:linear-gradient(155deg, ${c.c1}, ${c.c2})"></i>${c.n} · ${c.name}`;
     btn.addEventListener('click', () => {
-      setup.color = c.n;
-      setMessage(`Colour ${c.n} (${c.name}) selected for all walls. It is the number in the wall ID.`);
+      setup.color = c.n; walls.forEach(w => w.color = c.n);
+      setMessage(`Colour ${c.n} (${c.name}) set for all walls. You can still change each wall separately in its header.`);
       render();
     });
     colBox.appendChild(btn);
@@ -567,7 +571,7 @@ function buildSetup(){
   });
 }
 function updateSetup(){
-  document.querySelectorAll('[data-color]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.color === setup.color)));
+  document.querySelectorAll('[data-color]').forEach(b => b.setAttribute('aria-pressed', String(walls.every(w => w.color === +b.dataset.color))));
   document.querySelectorAll('[data-mount]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mount === setup.mount)));
 }
 
