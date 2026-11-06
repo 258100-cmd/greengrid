@@ -174,6 +174,8 @@
     padding:8px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.7;
   }
   .cart .btn{width:100%;margin-top:10px;}
+  .pp{font-weight:500;opacity:.7;}
+  .totals .line.total{border-top:2px solid currentColor;margin-top:8px;padding-top:10px;font-size:18px;font-weight:700;}
   .note{font-size:12px;color:var(--ink-soft);margin-top:12px;line-height:1.55;}
 
   .sitenav{border-bottom:2px solid var(--ink);background:var(--paper);}
@@ -214,11 +216,11 @@
         <span class="label">3 · Pot</span>
         <button class="tool" data-tool="A" aria-pressed="true">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="#4B7A5B" stroke="#24211D" stroke-width="1.5"/></svg>
-          A · PotSmall
+          A · PotSmall <span class="pp" data-price="A"></span>
         </button>
         <button class="tool" data-tool="B" aria-pressed="false">
           <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><rect x="2" y="4" width="22" height="14" rx="4" fill="#B0522D" stroke="#24211D" stroke-width="1.5"/></svg>
-          B · PotLarge
+          B · PotLarge <span class="pp" data-price="B"></span>
         </button>
         <button class="tool" data-tool="X" aria-pressed="false">
           <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M5 5 L17 17 M17 5 L5 17" stroke="#24211D" stroke-width="2.2" stroke-linecap="round"/></svg>
@@ -260,6 +262,9 @@ const POTS = {
   B: { name: 'PotLarge', radius: 1 },   // placeholder, change once the real size is measured
 };
 // number in the wall ID = colour, letter in the wall ID = mounting
+// example prices in euro, change them here (fillers are free)
+const PRICE = { wall: 24, A: 6, B: 9, filler: 0, cur: '€' };
+const money = n => PRICE.cur + n;
 const COLORS = [
   { n: 1, name: 'Natural', c1: '#C9A06B', c2: '#96703F' },
   { n: 2, name: 'White',   c1: '#F4F1EA', c2: '#CFC9BA' },
@@ -513,7 +518,7 @@ function renderCart(){
     return `<div class="cart-item">
       <div class="name">Wall ${num(w)} · ${posLabel(w)}</div>
       <div class="id">${fullCode(w)}</div>
-      <div class="contents">${mount.name} · ${col.name}<br>${parts.length ? parts.join(', ') : 'No pots'}</div>
+      <div class="contents">${mount.name} · ${col.name}<br>${parts.length ? parts.join(', ') : 'No pots'}<br><b>${money(PRICE.wall + ca * PRICE.A + cb * PRICE.B)}</b></div>
     </div>`;
   }).join('');
 
@@ -521,10 +526,11 @@ function renderCart(){
   document.getElementById('totals').innerHTML = `
     <div class="line"><span>Colour</span><b>${col.n} · ${col.name}</b></div>
     <div class="line"><span>Mounting</span><b>${mount.id} · ${mount.name}</b></div>
-    <div class="line"><span>Walls</span><b>${walls.length}</b></div>
-    <div class="line"><span>Fillers (dovetails)</span><b>${joints * 2}</b></div>
-    <div class="line"><span>PotSmall</span><b>${a}</b></div>
-    <div class="line"><span>PotLarge</span><b>${b}</b></div>`;
+    <div class="line"><span>Walls (${walls.length} × ${money(PRICE.wall)})</span><b>${money(walls.length * PRICE.wall)}</b></div>
+    <div class="line"><span>PotSmall (${a} × ${money(PRICE.A)})</span><b>${money(a * PRICE.A)}</b></div>
+    <div class="line"><span>PotLarge (${b} × ${money(PRICE.B)})</span><b>${money(b * PRICE.B)}</b></div>
+    <div class="line"><span>Fillers (${joints * 2} dovetails)</span><b>${PRICE.filler ? money(joints * 2 * PRICE.filler) : 'free'}</b></div>
+    <div class="line total"><span>Total</span><b>${money(walls.length * PRICE.wall + a * PRICE.A + b * PRICE.B + joints * 2 * PRICE.filler)}</b></div>`;
   document.getElementById('order-id').textContent = orderId();
 }
 
@@ -581,6 +587,7 @@ document.getElementById('copy').addEventListener('click', async () => {
   }
 });
 
+document.querySelectorAll('.pp').forEach(el => el.textContent = '· ' + money(PRICE[el.dataset.price]));
 buildSetup();
 render();
 </script>
